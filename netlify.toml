@@ -1,0 +1,4 @@
+[build]
+  base = "caixa-comercial"
+  command = "npm ci && npm run build"
+  publish = "dist"
