@@ -70,6 +70,23 @@ function Icon({ name, size = 20 }) {
     );
   }
 
+  if (name === "sun") {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" />
+      </svg>
+    );
+  }
+
+  if (name === "moon") {
+    return (
+      <svg {...common}>
+        <path d="M20.9 13A9 9 0 0 1 11 3.1 9 9 0 1 0 20.9 13Z" />
+      </svg>
+    );
+  }
+
   return null;
 }
 
@@ -88,6 +105,9 @@ function PaymentBadge({ method }) {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState(
+    () => window.localStorage.getItem("caixa-pdv-theme") || "light",
+  );
   const [entries, setEntries] = useState([]);
   const [amountInput, setAmountInput] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Dinheiro");
@@ -97,6 +117,11 @@ export default function App() {
   const [openedAt] = useState(() => formatTime(new Date()));
   const [feedback, setFeedback] = useState(null);
   const amountRef = useRef(null);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("caixa-pdv-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => setClock(new Date()), 1000);
@@ -198,6 +223,16 @@ export default function App() {
             <span className="online-dot" />
             Online
           </div>
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={() => setTheme((currentTheme) => currentTheme === "light" ? "dark" : "light")}
+            aria-label={`Ativar tema ${theme === "light" ? "escuro" : "claro"}`}
+            aria-pressed={theme === "dark"}
+            title={`Ativar tema ${theme === "light" ? "escuro" : "claro"}`}
+          >
+            <Icon name={theme === "light" ? "moon" : "sun"} size={18} />
+          </button>
         </div>
       </header>
 

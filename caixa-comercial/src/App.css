@@ -899,3 +899,276 @@ button:focus-visible {
     transition-duration: 0.01ms !important;
   }
 }
+
+.app-shell {
+  color: var(--text-primary);
+}
+
+.brand-mark {
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.brand-copy h1,
+.current-time,
+.breakdown-card strong,
+.panel-heading h2,
+.entry-description,
+.entry-amount,
+.empty-state strong,
+.mobile-entry-copy > strong {
+  color: var(--text-primary);
+}
+
+.brand-copy p,
+.date-time,
+.total-caption,
+.breakdown-label,
+.panel-heading p,
+.form-group label span,
+.field-hint,
+.history-table th,
+.entry-time,
+.empty-state,
+.app-footer,
+.mobile-entry-copy > span:not(.payment-badge) {
+  color: var(--text-secondary);
+}
+
+.online-badge {
+  border-color: color-mix(in srgb, var(--success) 24%, transparent);
+  background: color-mix(in srgb, var(--success) 9%, transparent);
+  color: var(--success);
+}
+
+.online-dot,
+.breakdown-indicator,
+.sync-dot {
+  background: var(--success);
+}
+
+.online-dot {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 15%, transparent);
+}
+
+.total-card,
+.panel {
+  border-color: var(--border);
+  background: var(--bg-card);
+  box-shadow: 0 12px 30px rgba(30, 41, 59, 0.06);
+}
+
+.total-card {
+  border-color: color-mix(in srgb, var(--success) 28%, var(--border));
+  background: var(--bg-card);
+}
+
+.total-heading {
+  color: var(--text-primary);
+}
+
+.form-group label,
+.entry-count {
+  color: var(--text-primary);
+}
+
+.wallet-icon {
+  background: color-mix(in srgb, var(--success) 10%, white);
+  color: var(--success);
+}
+
+.total-amount {
+  color: var(--success);
+  text-shadow: 0 0 24px color-mix(in srgb, var(--success) 15%, transparent);
+}
+
+.breakdown-card {
+  border-color: var(--border);
+  background: var(--bg-surface);
+}
+
+.breakdown-card.pix .breakdown-indicator {
+  background: var(--info);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--info) 25%, transparent);
+}
+
+.breakdown-card.card .breakdown-indicator {
+  background: var(--primary);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.form-group input,
+.form-group select,
+.amount-field {
+  border-color: var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.form-group input::placeholder,
+.operator-field input::placeholder {
+  color: var(--text-secondary);
+}
+
+.currency-prefix {
+  border-color: var(--border);
+  color: var(--text-secondary);
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.amount-field:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+}
+
+.submit-button {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.submit-button:hover {
+  border-color: var(--primary-hover);
+  background: var(--primary-hover);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+button:focus-visible {
+  outline-color: color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+.history-icon,
+.entry-count,
+.empty-icon {
+  border-color: var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+}
+
+.history-table th,
+.history-table td {
+  border-color: var(--border);
+}
+
+.history-table td,
+.entry-description,
+.mobile-entry-copy > strong {
+  color: var(--text-primary);
+}
+
+.payment-badge {
+  border-color: color-mix(in srgb, var(--success) 25%, transparent);
+  background: color-mix(in srgb, var(--success) 9%, transparent);
+  color: var(--success);
+}
+
+.payment-badge.pix {
+  border-color: color-mix(in srgb, var(--info) 25%, transparent);
+  background: color-mix(in srgb, var(--info) 9%, transparent);
+  color: var(--info);
+}
+
+.payment-badge.card {
+  border-color: color-mix(in srgb, var(--primary) 24%, transparent);
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  color: var(--primary);
+}
+
+.refund-icon-button,
+.refund-text-button {
+  color: var(--text-secondary);
+}
+
+.refund-icon-button:hover,
+.refund-text-button:hover {
+  border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--danger);
+}
+
+.feedback-message.success {
+  border-color: color-mix(in srgb, var(--success) 30%, transparent);
+  background: color-mix(in srgb, var(--success) 9%, transparent);
+  color: var(--success);
+}
+
+.feedback-message.error {
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--danger);
+}
+
+.operator-field input {
+  border-bottom-color: var(--border);
+  color: var(--text-primary);
+}
+
+.operator-field input:focus-visible {
+  border-bottom-color: var(--primary);
+  outline-color: color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.mobile-entry {
+  border-top-color: var(--border);
+}
+
+.header-meta {
+  gap: 12px;
+}
+
+.theme-toggle {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 7%, var(--bg-card));
+  color: var(--primary);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+:root[data-theme="dark"] .total-card,
+:root[data-theme="dark"] .panel {
+  box-shadow: 0 12px 30px rgba(2, 6, 23, 0.18);
+}
+
+:root[data-theme="dark"] .total-card {
+  border-color: color-mix(in srgb, var(--success) 22%, var(--border));
+}
+
+:root[data-theme="dark"] .wallet-icon {
+  background: color-mix(in srgb, var(--success) 14%, var(--bg-card));
+}
+
+:root[data-theme="dark"] .history-icon,
+:root[data-theme="dark"] .entry-count,
+:root[data-theme="dark"] .empty-icon {
+  background: color-mix(in srgb, var(--bg-surface) 55%, var(--bg-card));
+}
+
+:root[data-theme="dark"] .payment-badge.pix {
+  color: #67E8F9;
+}
+
+:root[data-theme="dark"] .payment-badge.card {
+  color: #C4B5FD;
+}
+
+:root[data-theme="dark"] .form-group select option {
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
