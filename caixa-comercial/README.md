@@ -27,6 +27,21 @@ Para verificar o lint do projeto:
 npm run lint
 ```
 
+## Deploy no Netlify
+
+No Netlify, importe o repositório do GitHub e configure:
+
+- **Base directory:** `caixa-comercial`
+- **Build command:** `npm run build`
+- **Publish directory:** `caixa-comercial/dist`
+
+O arquivo [`netlify.toml`](./netlify.toml) já contém o comando e a pasta de
+publicação quando a base directory for definida como `caixa-comercial`.
+
+Em **Site configuration > Environment variables**, cadastre as variáveis
+`VITE_FIREBASE_*` usando os valores do arquivo `.env.local` local. Depois faça
+um novo deploy. Não envie `.env.local` para o GitHub.
+
 ## Uso do caixa
 
 - O caixa abre automaticamente em uma sessão nova, sem saldo ou vendas de demonstração.
