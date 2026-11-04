@@ -46,13 +46,51 @@ npm run lint
 - Histórico em formato de lista em telas pequenas; tabela em telas maiores.
 - Rodapé com horário de abertura, nome editável do operador e indicação de última sincronização.
 
-## Dados e limitações desta versão
+## Configuração do Firebase
 
-Esta primeira versão mantém lançamentos e nome do operador somente no estado local do React. Atualizar ou fechar a página apaga os dados da sessão; não há banco de dados nem persistência em `localStorage`.
+Crie um arquivo `.env.local` na pasta `caixa-comercial` com a configuração do
+aplicativo Web do Firebase:
 
-O caixa começa com saldo inicial zero. Os subtotais refletem somente os lançamentos da sessão atual. O indicador “Online” e o texto de sincronização são elementos visuais: não há verificação de conexão nem sincronização com servidor.
+```env
+VITE_FIREBASE_API_KEY=sua_api_key
+VITE_FIREBASE_AUTH_DOMAIN=seu-projeto.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=seu-projeto
+VITE_FIREBASE_STORAGE_BUCKET=seu-projeto.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=seu_messaging_sender_id
+VITE_FIREBASE_APP_ID=seu_app_id
+```
 
-Não estão incluídos autenticação, integração com maquininha, emissão de cupom fiscal, estoque ou cadastro de produtos.
+O aplicativo grava as vendas na coleção `sales`, escuta essa coleção com
+`onSnapshot` e atualiza todas as páginas abertas em tempo real. O estorno
+remove o documento correspondente no Firestore. O acesso exige autenticação por
+e-mail e senha. Crie os usuários autorizados em **Authentication > Users** no
+Firebase Console e habilite o provedor **Email/Password**.
+
+As regras padrão estão em [`firestore.rules`](./firestore.rules). Publique-as
+no projeto Firebase antes de usar a aplicação em produção:
+
+```bash
+firebase deploy --only firestore:rules
+```
+
+Cada lançamento também registra o UID e o e-mail do usuário autenticado.
+As vendas novas recebem `operationDate` no formato `AAAA-MM-DD`, usando a data
+local do navegador, e o histórico consulta somente os lançamentos do dia atual.
+Vendas antigas criadas antes desse campo não aparecem no histórico diário.
+
+O botão **Extrato CSV** baixa um arquivo com o resumo do dia, os totais por
+forma de pagamento e todos os lançamentos exibidos no histórico. O arquivo pode
+ser aberto no Excel ou no Google Planilhas.
+
+O botão **Fechar dia** registra o resumo diário no Firestore e bloqueia novos
+lançamentos e estornos para aquela data. O fechamento não pode ser alterado ou
+excluído pelas regras padrão.
+
+Sem essas variáveis, a aplicação exibe a tela de configuração e não libera o
+acesso ao caixa.
+
+Não estão incluídos integração com maquininha, emissão de cupom fiscal,
+estoque ou cadastro de produtos.
 
 ## Tecnologias
 

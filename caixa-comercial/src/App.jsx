@@ -1,4 +1,20 @@
 import { useEffect, useRef, useState } from "react";
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+} from "firebase/auth";
+import {
+  addDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  serverTimestamp,
+  setDoc,
+  where,
+} from "firebase/firestore";
+import { auth, db, isFirebaseConfigured, salesCollection } from "./firebase";
 
 const paymentMethods = ["Dinheiro", "PIX", "Cartão"];
 const currency = new Intl.NumberFormat("pt-BR", {
@@ -50,6 +66,16 @@ function Icon({ name, size = 20 }) {
     );
   }
 
+  if (name === "download") {
+    return (
+      <svg {...common}>
+        <path d="M12 3v12" />
+        <path d="m7 10 5 5 5-5" />
+        <path d="M5 21h14" />
+      </svg>
+    );
+  }
+
   if (name === "trash") {
     return (
       <svg {...common}>
@@ -97,11 +123,124 @@ function formatTime(date) {
   }).format(date);
 }
 
+function formatOperationDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function sortEntries(entries) {
+  return [...entries].sort((first, second) => {
+    const firstTime = first.createdAtMs || 0;
+    const secondTime = second.createdAtMs || 0;
+    return secondTime - firstTime;
+  });
+}
+
 function PaymentBadge({ method }) {
   const className =
     method === "Dinheiro" ? "cash" : method === "PIX" ? "pix" : "card";
 
   return <span className={`payment-badge ${className}`}>{method}</span>;
+}
+
+function escapeCsvValue(value) {
+  const text = String(value ?? "");
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function getAuthErrorMessage(error) {
+  if (error.code === "auth/invalid-credential" || error.code === "auth/invalid-login-credentials") {
+    return "E-mail ou senha inválidos.";
+  }
+  if (error.code === "auth/too-many-requests") {
+    return "Muitas tentativas. Aguarde alguns minutos e tente novamente.";
+  }
+  if (error.code === "auth/user-disabled") {
+    return "Este usuário foi desativado.";
+  }
+  return "Não foi possível entrar. Verifique sua conexão e tente novamente.";
+}
+
+function LoginScreen() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSubmit(event) {
+    event.preventDefault();
+    setErrorMessage("");
+
+    if (!auth) {
+      setErrorMessage("Configure o Firebase antes de tentar entrar.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await signInWithEmailAndPassword(auth, email.trim(), password);
+    } catch (error) {
+      console.error("Erro ao autenticar no Firebase:", error);
+      setErrorMessage(getAuthErrorMessage(error));
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <main className="auth-shell">
+      <section className="auth-card" aria-labelledby="login-title">
+        <div className="brand-mark auth-brand-mark">
+          <Icon name="store" size={23} />
+        </div>
+        <div className="auth-heading">
+          <h1 id="login-title">Entrar no Caixa PDV</h1>
+          <p>Use uma conta autorizada para acessar o caixa.</p>
+        </div>
+
+        {!isFirebaseConfigured && (
+          <p className="auth-message error" role="alert">
+            Firebase não configurado. Preencha o arquivo .env.local com os dados
+            do seu aplicativo Web do Firebase.
+          </p>
+        )}
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label htmlFor="login-email">E-mail</label>
+            <input
+              id="login-email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </div>
+          <div className="form-group">
+            <label htmlFor="login-password">Senha</label>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+          </div>
+          {errorMessage && (
+            <p className="auth-message error" role="alert">{errorMessage}</p>
+          )}
+          <button type="submit" className="submit-button" disabled={isSubmitting || !isFirebaseConfigured}>
+            {isSubmitting ? "Entrando..." : "Entrar"}
+          </button>
+        </form>
+      </section>
+    </main>
+  );
 }
 
 export default function App() {
@@ -112,11 +251,25 @@ export default function App() {
   const [amountInput, setAmountInput] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Dinheiro");
   const [description, setDescription] = useState("");
-  const [operator, setOperator] = useState("");
   const [clock, setClock] = useState(() => new Date());
   const [openedAt] = useState(() => formatTime(new Date()));
-  const [feedback, setFeedback] = useState(null);
+  const [feedback, setFeedback] = useState(() =>
+    isFirebaseConfigured
+      ? null
+      : {
+          type: "error",
+          message: "Firebase não configurado. Defina as variáveis VITE_FIREBASE_*.",
+        },
+  );
+  const [isSyncing, setIsSyncing] = useState(isFirebaseConfigured);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [user, setUser] = useState(null);
+  const [isAuthLoading, setIsAuthLoading] = useState(isFirebaseConfigured);
+  const [dailyClosing, setDailyClosing] = useState(null);
   const amountRef = useRef(null);
+  const operationDate = formatOperationDate(clock);
+  const operatorName = user?.displayName || user?.email || "Usuário autenticado";
+  const isDayClosed = dailyClosing?.status === "closed";
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -133,6 +286,78 @@ export default function App() {
     const timeoutId = window.setTimeout(() => setFeedback(null), 3200);
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
+
+  useEffect(() => {
+    if (!auth) {
+      return undefined;
+    }
+
+    return onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser);
+      setIsAuthLoading(false);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!user || !salesCollection) {
+      return undefined;
+    }
+
+    const salesQuery = query(
+      salesCollection,
+      where("operationDate", "==", operationDate),
+    );
+    const unsubscribe = onSnapshot(
+      salesQuery,
+      (snapshot) => {
+        const nextEntries = snapshot.docs.map((sale) => {
+          const data = sale.data();
+          return {
+            id: sale.id,
+            description: data.description || "Venda no balcão",
+            method: data.method || "Dinheiro",
+            amount: Number(data.amountCents || 0) / 100,
+            time: data.time || formatTime(new Date(data.createdAtMs || Date.now())),
+            createdAtMs: Number(data.createdAtMs || 0),
+            operator: data.operator || data.createdByEmail || "",
+          };
+        });
+        setEntries(sortEntries(nextEntries));
+        setIsSyncing(true);
+        setLastSyncedAt(new Date());
+      },
+      (error) => {
+        console.error("Erro ao sincronizar vendas com o Firestore:", error);
+        setIsSyncing(false);
+        setFeedback({
+          type: "error",
+          message: "Não foi possível sincronizar com o Firestore.",
+        });
+      },
+    );
+
+    return unsubscribe;
+  }, [operationDate, user]);
+
+  useEffect(() => {
+    if (!user || !db) {
+      return undefined;
+    }
+
+    return onSnapshot(
+      doc(db, "dailyClosings", operationDate),
+      (snapshot) => {
+        setDailyClosing(snapshot.exists() ? snapshot.data() : null);
+      },
+      (error) => {
+        console.error("Erro ao consultar fechamento diário:", error);
+        setFeedback({
+          type: "error",
+          message: "Não foi possível consultar o fechamento do dia.",
+        });
+      },
+    );
+  }, [operationDate, user]);
 
   const amountInCents = Number(amountInput.replace(/\D/g, ""));
   const entryTotalInCents = entries.reduce(
@@ -156,8 +381,12 @@ export default function App() {
     setAmountInput(digits ? String(Number(digits)) : "");
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
+    if (isDayClosed) {
+      setFeedback({ type: "error", message: "O dia já foi fechado. Novos lançamentos estão bloqueados." });
+      return;
+    }
     if (amountInCents <= 0) {
       setFeedback({ type: "error", message: "Informe um valor maior que zero." });
       amountRef.current?.focus();
@@ -165,27 +394,144 @@ export default function App() {
     }
 
     const now = new Date();
-    setEntries((currentEntries) => [
-      {
-        id: crypto.randomUUID(),
+    if (!salesCollection) {
+      setFeedback({
+        type: "error",
+        message: "Firebase não configurado. A venda não foi gravada.",
+      });
+      return;
+    }
+
+    try {
+      await addDoc(salesCollection, {
         description: description.trim() || "Venda no balcão",
         method: paymentMethod,
-        amount: amountInCents / 100,
+        amountCents: amountInCents,
         time: formatTime(now),
-      },
-      ...currentEntries,
-    ]);
-    setAmountInput("");
-    setDescription("");
-    setFeedback({ type: "success", message: "Lançamento adicionado com sucesso." });
-    amountRef.current?.focus();
+        createdAtMs: now.getTime(),
+        createdAt: serverTimestamp(),
+        operationDate: formatOperationDate(now),
+        operator: operatorName,
+        createdBy: user.uid,
+        createdByEmail: user.email,
+      });
+      setAmountInput("");
+      setDescription("");
+      setFeedback({ type: "success", message: "Lançamento sincronizado com sucesso." });
+      amountRef.current?.focus();
+    } catch (error) {
+      console.error("Erro ao salvar venda no Firestore:", error);
+      setFeedback({
+        type: "error",
+        message: "Não foi possível salvar a venda no Firestore.",
+      });
+    }
   }
 
-  function handleRefund(id) {
-    setEntries((currentEntries) =>
-      currentEntries.filter((entry) => entry.id !== id),
-    );
-    setFeedback({ type: "success", message: "Lançamento estornado." });
+  async function handleRefund(id) {
+    if (isDayClosed) {
+      setFeedback({ type: "error", message: "O dia já foi fechado. Não é possível estornar lançamentos." });
+      return;
+    }
+    if (!window.confirm("Deseja realmente estornar este lançamento? Essa ação não pode ser desfeita.")) {
+      return;
+    }
+    if (!db) {
+      setFeedback({
+        type: "error",
+        message: "Firebase não configurado. O estorno não foi gravado.",
+      });
+      return;
+    }
+
+    try {
+      await deleteDoc(doc(db, "sales", id));
+      setFeedback({ type: "success", message: "Lançamento estornado e sincronizado." });
+    } catch (error) {
+      console.error("Erro ao estornar venda no Firestore:", error);
+      setFeedback({
+        type: "error",
+        message: "Não foi possível estornar a venda no Firestore.",
+      });
+    }
+  }
+
+  async function handleSignOut() {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Erro ao sair da conta:", error);
+      setFeedback({
+        type: "error",
+        message: "Não foi possível sair da conta.",
+      });
+    }
+  }
+
+  async function handleCloseDay() {
+    if (isDayClosed || !db) {
+      return;
+    }
+    if (!window.confirm("Deseja fechar o caixa de hoje? Novos lançamentos e estornos serão bloqueados.")) {
+      return;
+    }
+
+    try {
+      await setDoc(doc(db, "dailyClosings", operationDate), {
+        operationDate,
+        status: "closed",
+        totalCents: totalInCents,
+        paymentTotals,
+        closedAt: serverTimestamp(),
+        closedAtMs: Date.now(),
+        closedBy: user.uid,
+        closedByEmail: user.email,
+      });
+      setFeedback({ type: "success", message: "Caixa do dia fechado com sucesso." });
+    } catch (error) {
+      console.error("Erro ao fechar o caixa do dia:", error);
+      setFeedback({
+        type: "error",
+        message: "Não foi possível fechar o caixa do dia.",
+      });
+    }
+  }
+
+  function handleDownloadStatement() {
+    const reportDate = new Date();
+    const rows = [
+      ["Extrato diário do Caixa PDV"],
+      ["Data", reportDate.toLocaleDateString("pt-BR")],
+      [],
+      ["Resumo"],
+      ["Total", currency.format(totalInCents / 100)],
+      ...paymentMethods.map((method) => [
+        method,
+        currency.format(paymentTotals[method] / 100),
+      ]),
+      [],
+      ["Descrição", "Horário", "Pagamento", "Valor", "Operador"],
+      ...entries.map((entry) => [
+        entry.description,
+        entry.time,
+        entry.method,
+        currency.format(entry.amount),
+        entry.operator,
+      ]),
+    ];
+    const csv = `\uFEFF${rows
+      .map((row) => row.map(escapeCsvValue).join(";"))
+      .join("\r\n")}`;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `extrato-caixa-${operationDate}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setFeedback({ type: "success", message: "Extrato diário baixado com sucesso." });
   }
 
   const dateLabel = new Intl.DateTimeFormat("pt-BR", {
@@ -194,6 +540,14 @@ export default function App() {
     month: "long",
     year: "numeric",
   }).format(clock);
+
+  if (isAuthLoading) {
+    return <main className="auth-shell"><p className="auth-loading">Verificando autenticação...</p></main>;
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
 
   return (
     <main className="app-shell">
@@ -221,7 +575,13 @@ export default function App() {
           </div>
           <div className="online-badge">
             <span className="online-dot" />
-            Online
+            {isSyncing ? "Online" : "Offline"}
+          </div>
+          <div className="account-controls">
+            <span className="account-email" title={user.email}>{user.email}</span>
+            <button type="button" className="sign-out-button" onClick={handleSignOut}>
+              Sair
+            </button>
           </div>
           <button
             type="button"
@@ -320,10 +680,13 @@ export default function App() {
               />
             </div>
 
-            <button type="submit" className="submit-button">
+            <button type="submit" className="submit-button" disabled={isDayClosed}>
               <span>Lançar no Caixa</span>
               <Icon name="arrow" size={20} />
             </button>
+            {isDayClosed && (
+              <p className="field-hint">O caixa de hoje está fechado.</p>
+            )}
           </form>
         </section>
 
@@ -336,7 +699,27 @@ export default function App() {
                 <p>Movimentações de hoje</p>
               </div>
             </div>
-            <span className="entry-count">{entries.length} {entries.length === 1 ? "registro" : "registros"}</span>
+            <div className="history-actions">
+              <span className="entry-count">{entries.length} {entries.length === 1 ? "registro" : "registros"}</span>
+              <button
+                type="button"
+                className="statement-button"
+                onClick={handleDownloadStatement}
+                title="Baixar extrato do dia"
+              >
+                <Icon name="download" size={16} />
+                Extrato CSV
+              </button>
+              <button
+                type="button"
+                className="statement-button"
+                onClick={handleCloseDay}
+                disabled={isDayClosed}
+                title={isDayClosed ? "Caixa já fechado" : "Fechar caixa do dia"}
+              >
+                {isDayClosed ? "Dia fechado" : "Fechar dia"}
+              </button>
+            </div>
           </div>
 
           {entries.length === 0 ? (
@@ -371,6 +754,7 @@ export default function App() {
                             type="button"
                             className="refund-icon-button"
                             onClick={() => handleRefund(entry.id)}
+                            disabled={isDayClosed}
                             title="Estornar lançamento"
                             aria-label={`Estornar lançamento: ${entry.description}`}
                           >
@@ -396,6 +780,7 @@ export default function App() {
                         type="button"
                         className="refund-text-button"
                         onClick={() => handleRefund(entry.id)}
+                        disabled={isDayClosed}
                         aria-label={`Estornar lançamento: ${entry.description}`}
                       >
                         <Icon name="trash" size={15} />
@@ -411,18 +796,16 @@ export default function App() {
       </div>
 
       <footer className="app-footer">
-        <label className="operator-field" htmlFor="operator">
+        <span className="operator-field">
           <span>Caixa aberto às {openedAt} por</span>
-          <input
-            id="operator"
-            type="text"
-            value={operator}
-            onChange={(event) => setOperator(event.target.value)}
-            placeholder="Nome do operador"
-            aria-label="Nome do operador do caixa"
-          />
-        </label>
-        <span><span className="sync-dot" />Última sincronização: agora</span>
+          <strong>{operatorName}</strong>
+        </span>
+        <span>
+          <span className="sync-dot" />
+          {lastSyncedAt
+            ? `Última sincronização: ${formatTime(lastSyncedAt)}`
+            : "Aguardando sincronização"}
+        </span>
       </footer>
     </main>
   );

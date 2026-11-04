@@ -2,6 +2,91 @@
   min-height: 100vh;
 }
 
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg-surface);
+}
+
+.auth-card {
+  width: min(100%, 420px);
+  padding: 32px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--bg-card);
+  box-shadow: 0 16px 40px rgba(2, 6, 23, 0.18);
+}
+
+.auth-brand-mark {
+  margin-bottom: 22px;
+}
+
+.auth-heading h1 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.45rem;
+}
+
+.auth-heading p {
+  margin: 8px 0 24px;
+  color: var(--text-secondary);
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-message {
+  margin: 16px 0 0;
+  padding: 11px 13px;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 0.86rem;
+}
+
+.auth-message.error {
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+  color: var(--danger);
+}
+
+.auth-loading {
+  color: var(--text-secondary);
+}
+
+.account-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-email {
+  max-width: 180px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sign-out-button {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.78rem;
+}
+
+.sign-out-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
 .app-shell {
   width: min(100% - 64px, 1376px);
   margin: 0 auto;
@@ -406,6 +491,45 @@ button:focus-visible {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 20px;
+}
+
+.history-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.statement-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.statement-button:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.statement-button:disabled,
+.submit-button:disabled,
+.refund-icon-button:disabled,
+.refund-text-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.operator-field strong {
+  color: var(--text-primary);
+  font-weight: 650;
 }
 
 .history-icon {
